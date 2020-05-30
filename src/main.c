@@ -1,28 +1,24 @@
 #include "terminal.h"
 #include "input.h"
+#include "output.h"
 #include <stdlib.h>
 #include <unistd.h>
 #include <termios.h>
 
-/* reseting the terminal back to original state on exit.
- * should move into terminal.c
- */
-struct termios orig_termios;
+struct EditorConfig global_config;
 
-void disable_raw_mode(void)
+void reset_terminal(void)
 {
-    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios) == -1) {
-        die("tcsetattr");
-    }
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &global_config.termios_attrs);
 }
 
 int main(void)
 {
-    tcgetattr(STDIN_FILENO, &orig_termios);
-    enable_raw_mode();
-    atexit(disable_raw_mode);
+    init_editor(&global_config);
+    atexit(reset_terminal);
 
     while (1) {
+        ed_refresh_screen(&global_config);
         ed_process_keypress();
     }
 
